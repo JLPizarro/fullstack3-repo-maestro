@@ -13,8 +13,10 @@ database:
   passwordPlaintext: "admin123" # Fallback para testing rápido
   dbName: asdf_db
   # host y port no se definen → usa automáticamente db-global:5432 (in-cluster)
-  storageSize: 5Gi
-  storageClass: "gp2" # Clase de almacenamiento estándar de AWS EBS
+  
+  # 📌 NUEVA CONFIGURACIÓN PARA EVITAR DISCOS EXTERNOS DE AWS ACADEMY
+  # (Recuerda cambiar este valor por el nombre real de tu nodo si es diferente)
+  targetNode: "ip-192-168-10-45.ec2.internal" 
 
 ingress:
   className: "nginx" # Cambiado a Nginx Ingress Controller (es gratis, requiere un Classic Load Balancer económico)
