@@ -20,13 +20,17 @@ spec:
       imagePullSecrets:
         - name: ghcr-secret
       {{- end }}
+      
+      # 📌 FIJAMOS TU BASE DE DATOS AL NODO ESPECÍFICO
+      nodeSelector:
+        kubernetes.io/hostname: {{ .Values.database.targetNode | quote }}
+
       containers:
       - name: postgres
         {{- if $.Values.global.image.registry }}
         image: "{{ $.Values.global.image.registry }}/db-postgres:{{ $.Values.global.image.tag }}"
         imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
         {{- else }}
-        # En local se usa la imagen construida localmente con pg_cron
         image: "db-postgres:local"
         imagePullPolicy: IfNotPresent
         {{- end }}
@@ -40,20 +44,24 @@ spec:
           value: {{ .Values.database.password | quote }}
         - name: POSTGRES_DB
           value: {{ .Values.database.dbName | quote }}
+        # Reducimos cuotas para asegurar que quepa sin OOMKilled en t3.medium
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "512Mi"
         volumeMounts:
         - name: pgdata
           mountPath: /var/lib/postgresql/data
-  volumeClaimTemplates:
-  - metadata:
-      name: pgdata
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      {{- if $.Values.database.storageClass }}
-      storageClassName: {{ $.Values.database.storageClass | quote }}
-      {{- end }}
-      resources:
-        requests:
-          storage: {{ .Values.database.storageSize | default "2Gi" }}
+          
+      # 📌 SE AGREGAN LOS VOLÚMENES DIRECTOS AQUÍ
+      volumes:
+      - name: pgdata
+        hostPath:
+          path: /mnt/data/postgres
+          type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service
