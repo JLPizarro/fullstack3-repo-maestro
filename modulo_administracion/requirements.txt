@@ -1,0 +1,9 @@
+quart
+quart-cors
+SQLAlchemy==2.0.28
+asyncpg==0.29.0
+pydantic==2.6.4
+hypercorn==0.16.0
+passlib==1.7.4
+bcrypt==4.1.2
+PyJWT==2.8.0

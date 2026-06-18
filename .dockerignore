@@ -1,0 +1,12 @@
+**/node_modules
+**/dist
+**/.vite
+**/.cache
+**/.pytest_cache
+**/__pycache__
+**/*.pyc
+.git
+.env
+Dockerfile
+docker-compose.override.yml
+

@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  db-global:
+    build: .
+    container_name: asdf_db_container
+    restart: always
+    command: postgres -c shared_preload_libraries=pg_cron -c cron.database_name=asdf_db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: asdf_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - asdf-network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: asdf_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@asdf.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    networks:
+      - asdf-network
+    depends_on:
+      - db-global
+
+networks:
+  asdf-network:
+    external: true
+
+volumes:
+  postgres_data:

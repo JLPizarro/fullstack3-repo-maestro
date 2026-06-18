@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  ms-rrhh:
+    build: .
+    container_name: ms_rrhh_postgres
+    ports:
+      - "8000:8000"
+    environment:
+      # Usamos el nombre del contenedor de la DB global
+      - DATABASE_URL=postgresql+asyncpg://admin:admin123@db_global:5432/asdf_db
+    networks:
+      - asdf-network
+
+networks:
+  asdf-network:
+    external: true

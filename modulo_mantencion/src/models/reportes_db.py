@@ -1,0 +1,52 @@
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, Boolean, Text, BigInteger, Integer, Float, DateTime
+from datetime import datetime
+from src.models.base import Base
+
+
+class ReportesDB(Base):
+    __tablename__ = "reportes"
+
+    report_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    sequential_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    report_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    input_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    device_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    holder_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    asset_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    asset_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    event_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    event_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    gps_validity: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    gps_satellites: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    gps_dop: Mapped[float | None] = mapped_column(Float, nullable=True)
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    location: Mapped[str | None] = mapped_column(Text, nullable=True)
+    area_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    speed: Mapped[float | None] = mapped_column(Float, nullable=True)
+    heading: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    odometer: Mapped[float | None] = mapped_column(Float, nullable=True)
+    hourmeter: Mapped[float | None] = mapped_column(Float, nullable=True)
+    total_fuel_used: Mapped[float | None] = mapped_column(Float, nullable=True)
+    obc_hourmeter: Mapped[float | None] = mapped_column(Float, nullable=True)
+    obc_odometer: Mapped[float | None] = mapped_column(Float, nullable=True)
+    parameter_value: Mapped[str | None] = mapped_column(Text, nullable=True)
+    parameter_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    parameter_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ralenti_band_time: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    yellow_band_time: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    efficient_handling_band_time: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    red_band_time: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    load_over_75_band_time: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    inefficient_cruise_control_band_time: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    engine_braking_time: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    cartography_limit_speed: Mapped[float | None] = mapped_column(Float, nullable=True)
+    gps_speed: Mapped[float | None] = mapped_column(Float, nullable=True)
+    driver_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    driver_last_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    driver_document_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    driver_document_number: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ignition: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    ignition_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    fecha_registro: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)

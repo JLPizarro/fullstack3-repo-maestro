@@ -1,0 +1,78 @@
+{{- range $name, $config := .Values.backends }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    app: {{ $name }}
+spec:
+  replicas: {{ $config.replicas }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: {{ $name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $name }}
+    spec:
+
+      # 👇 SECCIÓN AGREGADA PARA AUTENTICACIÓN CON GHCR 👇
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+      - name: {{ $name }}
+        image: "{{ $.Values.global.image.registry | default "" }}{{ if $.Values.global.image.registry }}/{{ end }}{{ $config.imageName }}:{{ $.Values.global.image.tag }}"
+        imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
+        ports:
+        - containerPort: {{ $config.port }}
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: {{ $.Release.Name }}-secrets
+              key: database-url
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ $.Release.Name }}-secrets
+              key: jwt-secret
+        {{- if eq $name "ms-mantencion" }}
+        - name: SITRACK_URL
+          value: {{ $config.sitrackUrl | quote }}
+        - name: SITRACK_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ $.Release.Name }}-secrets
+              key: sitrack-user
+        - name: SITRACK_PASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ $.Release.Name }}-secrets
+              key: sitrack-pass
+        {{- end }}
+        {{- if not (or (eq $name "ms-middleware") (eq $name "ms-watchdog")) }}
+        - name: TRUSTED_GATEWAY
+          value: {{ eq $name "ms-administracion" | ternary "false" "true" | quote }}
+        {{- end }}
+        livenessProbe:
+          httpGet:
+            path: {{ $config.healthPath }}
+            port: {{ $config.port }}
+          initialDelaySeconds: 30
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: {{ $config.healthPath }}
+            port: {{ $config.port }}
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        resources:
+          {{- toYaml $config.resources | nindent 10 }}
+---
+{{- end }}

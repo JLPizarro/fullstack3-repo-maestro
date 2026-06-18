@@ -1,0 +1,39 @@
+# Servicios para los Backend Microservices
+{{- range $name, $config := .Values.backends }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    app: {{ $name }}
+spec:
+  type: ClusterIP
+  ports:
+  - port: {{ $config.port }}
+    targetPort: {{ $config.port }}
+    protocol: TCP
+    name: http
+  selector:
+    app: {{ $name }}
+---
+{{- end }}
+
+# Servicios para los Frontends Nginx
+{{- range $name, $config := .Values.frontends }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    app: {{ $name }}
+spec:
+  type: ClusterIP
+  ports:
+  - port: {{ $config.port }}
+    targetPort: {{ $config.port }}
+    protocol: TCP
+    name: http
+  selector:
+    app: {{ $name }}
+---
+{{- end }}

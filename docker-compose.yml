@@ -1,0 +1,252 @@
+services:
+  # --- INFRASTRUCTURE ---
+  db-global:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - asdf-network
+
+  gateway:
+    image: nginx:latest
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - front-login
+      - front-administracion
+      - ms-middleware
+    networks:
+      - asdf-network
+
+  # --- MIDDLEWARE & AUTH ---
+  ms-middleware:
+    build:
+      context: ./modulo_middleware
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
+    networks:
+      - asdf-network
+
+  # --- MICROSERVICES ---
+  ms-acreditacion:
+    build:
+      context: ./modulo_acreditacion
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - TRUSTED_GATEWAY=true
+    networks:
+      - asdf-network
+
+  ms-administracion:
+    build:
+      context: ./modulo_administracion
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - TRUSTED_GATEWAY=false
+    networks:
+      - asdf-network
+
+  ms-bodega:
+    build:
+      context: ./modulo_bodega
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - TRUSTED_GATEWAY=true
+    networks:
+      - asdf-network
+
+  ms-facturacion:
+    build:
+      context: ./modulo_facturacion
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - TRUSTED_GATEWAY=true
+    networks:
+      - asdf-network
+
+  ms-mantencion:
+    build:
+      context: ./modulo_mantencion
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - SITRACK_URL=${SITRACK_URL}
+      - SITRACK_USER=${SITRACK_USER}
+      - SITRACK_PASS=${SITRACK_PASS}
+      - TRUSTED_GATEWAY=true
+    networks:
+      - asdf-network
+
+  ms-operacion:
+    build:
+      context: ./modulo_operacion
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - TRUSTED_GATEWAY=true
+    networks:
+      - asdf-network
+
+  ms-prevencion:
+    build:
+      context: ./modulo_prevencion
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - TRUSTED_GATEWAY=true
+    networks:
+      - asdf-network
+
+  ms-rrhh:
+    build:
+      context: ./modulo_rrhh
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - TRUSTED_GATEWAY=true
+    networks:
+      - asdf-network
+
+  ms-watchdog:
+    build:
+      context: ./modulo_watchdog
+      dockerfile: Dockerfile
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - asdf-network
+
+  # --- FRONTENDS ---
+  front-acreditacion:
+    build:
+      context: .
+      dockerfile: ./front_modulo_acreditacion/Dockerfile
+    environment:
+      - VITE_API_URL=/api/v1
+    networks:
+      - asdf-network
+
+  front-administracion:
+    build:
+      context: .
+      dockerfile: ./front_modulo_administracion/Dockerfile
+    environment:
+      - VITE_API_URL=/api/v1
+    networks:
+      - asdf-network
+
+  front-bodega:
+    build:
+      context: .
+      dockerfile: ./front_modulo_bodega/Dockerfile
+    environment:
+      - VITE_API_URL=/api/v1
+    networks:
+      - asdf-network
+
+  front-facturacion:
+    build:
+      context: .
+      dockerfile: ./front_modulo_facturacion/Dockerfile
+    environment:
+      - VITE_API_URL=/api/v1
+    networks:
+      - asdf-network
+
+  front-login:
+    build:
+      context: .
+      dockerfile: ./front_modulo_login/Dockerfile
+    environment:
+      - VITE_API_URL=/api/v1
+    networks:
+      - asdf-network
+
+  front-mantencion:
+    build:
+      context: .
+      dockerfile: ./front_modulo_mantencion/Dockerfile
+    environment:
+      - VITE_API_URL=/api/v1
+    networks:
+      - asdf-network
+
+  front-operacion:
+    build:
+      context: .
+      dockerfile: ./front_modulo_operacion/Dockerfile
+    environment:
+      - VITE_API_URL=/api/v1
+    networks:
+      - asdf-network
+
+  front-prevencion:
+    build:
+      context: .
+      dockerfile: ./front_modulo_prevencion/Dockerfile
+    environment:
+      - VITE_API_URL=/api/v1
+    networks:
+      - asdf-network
+
+  front-rrhh:
+    build:
+      context: .
+      dockerfile: ./front_modulo_rrhh/Dockerfile
+    environment:
+      - VITE_API_URL=/api/v1
+    networks:
+      - asdf-network
+
+  front-watchdog:
+    build:
+      context: .
+      dockerfile: ./front_modulo_watchdog/Dockerfile
+    environment:
+      - VITE_API_URL=/api/v1
+    networks:
+      - asdf-network
+
+networks:
+  asdf-network:
+    driver: bridge
+
+volumes:
+  pgdata:

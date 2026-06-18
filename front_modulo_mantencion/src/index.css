@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Module identity (Mantención) */
+:root {
+  --moduleAccent: #1d4ed8;
+  --moduleAccent-soft: rgba(29, 78, 216, 0.10);
+  --moduleAccent-bd: rgba(29, 78, 216, 0.22);
+}

@@ -1,0 +1,70 @@
+{{- if .Values.database.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db-global
+  labels:
+    app: db-global
+spec:
+  serviceName: db-global
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db-global
+  template:
+    metadata:
+      labels:
+        app: db-global
+    spec:
+      {{- if $.Values.global.image.registry }}
+      imagePullSecrets:
+        - name: ghcr-secret
+      {{- end }}
+      containers:
+      - name: postgres
+        {{- if $.Values.global.image.registry }}
+        image: "{{ $.Values.global.image.registry }}/db-postgres:{{ $.Values.global.image.tag }}"
+        imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
+        {{- else }}
+        # En local se usa la imagen construida localmente con pg_cron
+        image: "db-postgres:local"
+        imagePullPolicy: IfNotPresent
+        {{- end }}
+        ports:
+        - containerPort: 5432
+          name: dbport
+        env:
+        - name: POSTGRES_USER
+          value: {{ .Values.database.user | quote }}
+        - name: POSTGRES_PASSWORD
+          value: {{ .Values.database.password | quote }}
+        - name: POSTGRES_DB
+          value: {{ .Values.database.dbName | quote }}
+        volumeMounts:
+        - name: pgdata
+          mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+  - metadata:
+      name: pgdata
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      {{- if $.Values.database.storageClass }}
+      storageClassName: {{ $.Values.database.storageClass | quote }}
+      {{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.database.storageSize | default "2Gi" }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-global
+  labels:
+    app: db-global
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: db-global
+{{- end }}

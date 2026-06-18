@@ -1,0 +1,24 @@
+1. Administrador Global (Todos los módulos en modo edición)
+
+Email: admin@asdf.cl
+Clave: admin123
+2. Gestor de Recursos Humanos
+
+Email: rrhh@asdf.cl
+Clave: user123
+Solo puede acceder y editar el módulo de RRHH.
+3. Visor de Bodega (Solo Lectura)
+
+Email: bodega_visor@asdf.cl
+Clave: user123
+Puede entrar a Bodega, pero los botones de guardar y crear estarán ocultos.
+4. Operador de Mantención
+
+Email: mantencion@asdf.cl
+Clave: user123
+Puede editar Mantención y también ver (solo lectura) Bodega.
+5. Despachador de Operaciones
+
+Email: operacion@asdf.cl
+Clave: user123
+Puede editar Operación y ver (solo lectura) Facturación.

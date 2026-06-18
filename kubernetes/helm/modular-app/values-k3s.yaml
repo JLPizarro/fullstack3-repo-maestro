@@ -1,0 +1,235 @@
+global:
+  environment: local
+  image:
+    registry: ""
+    tag: latest
+    pullPolicy: IfNotPresent
+  jwtSecret: "super-secret-key-change-me-in-production"
+
+database:
+  enabled: true  # En local levantamos un PostgreSQL StatefulSet dentro de Kubernetes
+  user: admin
+  password: admin123
+  dbName: asdf_db
+  storageSize: 2Gi
+
+ingress:
+  className: "traefik"  # Traefik por defecto en K3s
+  host: "localhost"
+
+# Configuración de Microservicios de Backend
+backends:
+  ms-middleware:
+    imageName: ms-middleware
+    port: 8009
+    replicas: 1
+    healthPath: /health
+    hpa:
+      enabled: false
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+
+  ms-acreditacion:
+    imageName: ms-acreditacion
+    port: 8000
+    replicas: 1
+    healthPath: /api/v1/acreditacion/health
+    hpa:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 5
+      targetCPU: 80
+    resources: &default_resources
+      requests:
+        cpu: 50m
+        memory: 96Mi
+      limits:
+        cpu: 300m
+        memory: 256Mi
+
+  ms-administracion:
+    imageName: ms-administracion
+    port: 8007
+    replicas: 1
+    healthPath: /api/v1/administracion/health
+    hpa:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 5
+      targetCPU: 80
+    resources: *default_resources
+
+  ms-bodega:
+    imageName: ms-bodega
+    port: 8000
+    replicas: 1
+    healthPath: /api/v1/bodega/health
+    hpa:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 5
+      targetCPU: 80
+    resources: *default_resources
+
+  ms-facturacion:
+    imageName: ms-facturacion
+    port: 8000
+    replicas: 1
+    healthPath: /api/v1/facturacion/health
+    hpa:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 8
+      targetCPU: 75
+    resources: *default_resources
+
+  ms-mantencion:
+    imageName: ms-mantencion
+    port: 8000
+    replicas: 1
+    healthPath: /api/v1/vehiculos/health
+    hpa:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 5
+      targetCPU: 80
+    sitrackUrl: "https://api.sitrack.com"
+    sitrackUser: "local-user"
+    sitrackPass: "local-pass"
+    resources: *default_resources
+
+  ms-operacion:
+    imageName: ms-operacion
+    port: 8000
+    replicas: 1
+    healthPath: /api/v1/operacion/health
+    hpa:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 5
+      targetCPU: 80
+    resources: *default_resources
+
+  ms-prevencion:
+    imageName: ms-prevencion
+    port: 8000
+    replicas: 1
+    healthPath: /api/v1/prevencion/health
+    hpa:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 5
+      targetCPU: 80
+    resources: *default_resources
+
+  ms-rrhh:
+    imageName: ms-rrhh
+    port: 8000
+    replicas: 1
+    healthPath: /api/v1/personal/health
+    hpa:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 5
+      targetCPU: 80
+    resources: *default_resources
+
+  ms-watchdog:
+    imageName: ms-watchdog
+    port: 8008
+    replicas: 1
+    healthPath: /health
+    hpa:
+      enabled: false
+    resources:
+      requests:
+        cpu: 25m
+        memory: 48Mi
+      limits:
+        cpu: 100m
+        memory: 96Mi
+
+# Configuración de Frontends (Nginx sirviendo dist)
+frontends:
+  front-acreditacion:
+    imageName: front-acreditacion
+    port: 80
+    replicas: 1
+    path: /acreditacion/
+    apiPath: /api/v1/acreditacion/
+
+  front-administracion:
+    imageName: front-administracion
+    port: 80
+    replicas: 1
+    path: /administracion/
+    apiPath: /api/v1/administracion/
+
+  front-bodega:
+    imageName: front-bodega
+    port: 80
+    replicas: 1
+    path: /bodega/
+    apiPath: /api/v1/bodega/
+
+  front-facturacion:
+    imageName: front-facturacion
+    port: 80
+    replicas: 1
+    path: /facturacion/
+    apiPath: /api/v1/facturacion/
+
+  front-login:
+    imageName: front-login
+    port: 80
+    replicas: 1
+    path: /login/
+    apiPath: /api/v1/administracion/login
+
+  front-mantencion:
+    imageName: front-mantencion
+    port: 80
+    replicas: 1
+    path: /mantencion/
+    # Mantención tiene múltiples sub-rutas de API
+    apiPaths:
+      - /api/v1/mantenciones/
+      - /api/v1/ordenes-trabajo/
+      - /api/v1/preventive/
+      - /api/v1/reportes/
+      - /api/v1/templates-mantencion/
+      - /api/v1/vehiculos/
+
+  front-operacion:
+    imageName: front-operacion
+    port: 80
+    replicas: 1
+    path: /operacion/
+    apiPath: /api/v1/operacion/
+
+  front-prevencion:
+    imageName: front-prevencion
+    port: 80
+    replicas: 1
+    path: /prevencion/
+    apiPath: /api/v1/prevencion/
+
+  front-rrhh:
+    imageName: front-rrhh
+    port: 80
+    replicas: 1
+    path: /rrhh/
+    apiPath: /api/v1/personal/
+
+  front-watchdog:
+    imageName: front-watchdog
+    port: 80
+    replicas: 1
+    path: /watchdog/
+    apiPath: /api/v1/watchdog/
+

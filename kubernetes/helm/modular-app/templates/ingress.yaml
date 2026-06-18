@@ -1,0 +1,62 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-ingress
+  annotations:
+    {{- if eq .Values.global.environment "aws" }}
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className | quote }}
+  rules:
+  - host: {{ .Values.ingress.host | quote }}
+    http:
+      paths:
+      # Iteramos sobre todos los frontends específicos (excepto administracion que maneja la raíz "/")
+      {{- range $name, $config := .Values.frontends }}
+      {{- if not (eq $name "front-administracion") }}
+      
+      # Ruta del Frontend
+      - path: {{ $config.path }}
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ $name }}
+            port:
+              number: 80
+              
+      # Si tiene una única ruta API asociada
+      {{- if $config.apiPath }}
+      - path: {{ $config.apiPath }}
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ $name }}
+            port:
+              number: 80
+      {{- end }}
+      
+      # Si tiene múltiples rutas API (como front-mantencion)
+      {{- if $config.apiPaths }}
+      {{- range $apiPath := $config.apiPaths }}
+      - path: {{ $apiPath }}
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ $name }}
+            port:
+              number: 80
+      {{- end }}
+      {{- end }}
+      
+      {{- end }}
+      {{- end }}
+      
+      # Ruta Raíz (/) -> front-administracion
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: front-administracion
+            port:
+              number: 80

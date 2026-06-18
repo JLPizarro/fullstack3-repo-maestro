@@ -1,0 +1,17 @@
+quart
+quart-cors
+SQLAlchemy>=2.0
+asyncpg
+pydantic==2.6.4
+PyJWT==2.8.0
+passlib==1.7.4
+bcrypt==4.1.2
+uvicorn
+hypercorn==0.16.0
+httpx
+requests==2.31.0
+python-dotenv
+fastapi
+pytest
+pytest-asyncio
+pytest-mock

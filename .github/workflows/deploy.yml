@@ -1,0 +1,320 @@
+name: CI/CD Build, Push and Deploy (Monorepo EKS)
+
+on:
+  push:
+    branches:
+      - deploy
+  workflow_dispatch:
+    inputs:
+      build_all:
+        description: 'Forzar build de TODOS los módulos (ignorar detección de cambios)'
+        type: boolean
+        default: true
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # ============================================================
+      # FASE 0: CHECKOUT CON SUBMODULOS
+      # ============================================================
+      - name: Checkout repository (con submodulos)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ============================================================
+      # FASE 1.5: BUILD & PUSH IMAGEN DE BASE DE DATOS
+      # ============================================================
+      - name: "🗄️ Build & Push Database Image"
+        run: |
+          REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_NAME="${{ env.REGISTRY }}/$REPO_OWNER/db-postgres:latest"
+          echo "🚀 Construyendo imagen de base de datos: $IMAGE_NAME"
+          if docker build -t "$IMAGE_NAME" ./db_postgres; then
+            echo "✅ Build exitoso para db-postgres"
+            docker push "$IMAGE_NAME"
+            echo "✅ Push exitoso para db-postgres"
+          else
+            echo "❌ Build FALLÓ para db-postgres"
+            exit 1
+          fi
+
+      # ============================================================
+      # FASE 1: DETECCION - Armar lista de módulos a construir
+      # ============================================================
+      - name: "📋 Detectar módulos a construir"
+        id: detect
+        run: |
+          # Lista completa de todos los módulos del proyecto
+          ALL_BACKENDS="modulo_middleware modulo_acreditacion modulo_administracion modulo_bodega modulo_facturacion modulo_mantencion modulo_operacion modulo_prevencion modulo_rrhh modulo_watchdog"
+          ALL_FRONTENDS="front_modulo_acreditacion front_modulo_administracion front_modulo_bodega front_modulo_facturacion front_modulo_login front_modulo_mantencion front_modulo_operacion front_modulo_prevencion front_modulo_rrhh front_modulo_watchdog"
+
+          BUILD_ALL="${{ github.event.inputs.build_all }}"
+
+          if [ "$BUILD_ALL" = "true" ]; then
+            echo "=============================================="
+            echo "🔄 MODO: Construir TODOS los módulos (forzado)"
+            echo "=============================================="
+            BACKENDS="$ALL_BACKENDS"
+            FRONTENDS="$ALL_FRONTENDS"
+          else
+            echo "=============================================="
+            echo "🔍 MODO: Solo módulos con cambios"
+            echo "=============================================="
+
+            # Detectar carpetas que cambiaron vs el commit anterior
+            CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | cut -d'/' -f1 | sort -u || echo "")
+
+            echo "Carpetas con cambios detectados:"
+            echo "$CHANGED"
+            echo ""
+
+            BACKENDS=""
+            FRONTENDS=""
+
+            for dir in $CHANGED; do
+              # Verificar si es un backend conocido
+              if echo "$ALL_BACKENDS" | tr ' ' '\n' | grep -qx "$dir"; then
+                BACKENDS="$BACKENDS $dir"
+              fi
+              # Verificar si es un frontend conocido
+              if echo "$ALL_FRONTENDS" | tr ' ' '\n' | grep -qx "$dir"; then
+                FRONTENDS="$FRONTENDS $dir"
+              fi
+            done
+
+            # Limpiar espacios iniciales
+            BACKENDS=$(echo "$BACKENDS" | xargs)
+            FRONTENDS=$(echo "$FRONTENDS" | xargs)
+
+            # Si cambiaron archivos compartidos (shared_components, packages, etc.), construir todo
+            SHARED_CHANGED=false
+            for dir in $CHANGED; do
+              if [[ "$dir" == "shared_components" ]] || [[ "$dir" == "packages" ]] || [[ "$dir" == ".github" ]]; then
+                SHARED_CHANGED=true
+                break
+              fi
+            done
+
+            if [ "$SHARED_CHANGED" = "true" ]; then
+              echo "⚠️  Cambios en archivos compartidos detectados → construyendo TODOS los módulos"
+              BACKENDS="$ALL_BACKENDS"
+              FRONTENDS="$ALL_FRONTENDS"
+            fi
+
+            # Si no se detectó nada específico, construir todo (primer deploy o merge)
+            if [ -z "$BACKENDS" ] && [ -z "$FRONTENDS" ]; then
+              echo "⚠️  No se detectaron módulos específicos → construyendo TODOS"
+              BACKENDS="$ALL_BACKENDS"
+              FRONTENDS="$ALL_FRONTENDS"
+            fi
+          fi
+
+          # Guardar listas para los siguientes pasos
+          echo "backends=$BACKENDS" >> $GITHUB_OUTPUT
+          echo "frontends=$FRONTENDS" >> $GITHUB_OUTPUT
+
+          echo ""
+          echo "=============================================="
+          echo "📋 LISTA DE MÓDULOS A CONSTRUIR"
+          echo "=============================================="
+          echo "Backends:  $BACKENDS"
+          echo "Frontends: $FRONTENDS"
+          echo "=============================================="
+
+      # ============================================================
+      # FASE 2: BUILD & PUSH BACKENDS (independientes)
+      # ============================================================
+      - name: "🔧 Build & Push Backends"
+        id: build-backends
+        run: |
+          REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          BACKENDS="${{ steps.detect.outputs.backends }}"
+          FAILED=""
+          SUCCESS=""
+          SKIPPED=""
+
+          for module in $BACKENDS; do
+            SERVICE_NAME=$(echo "$module" | sed 's/^modulo_/ms-/')
+            IMAGE_NAME="${{ env.REGISTRY }}/$REPO_OWNER/$SERVICE_NAME:latest"
+
+            echo "======================================"
+            echo "🚀 Backend: $module → $SERVICE_NAME"
+            echo "   Imagen: $IMAGE_NAME"
+            echo "   Contexto: ./$module"
+            echo "======================================"
+
+            # Verificar que la carpeta tenga contenido (submodulo inicializado)
+            if [ ! -f "./$module/Dockerfile" ]; then
+              echo "⏭️  SALTADO: No se encontró Dockerfile en ./$module (submodulo vacío?)"
+              SKIPPED="$SKIPPED $SERVICE_NAME"
+              echo ""
+              continue
+            fi
+
+            # Build independiente - no detiene el pipeline si falla
+            if docker build -t "$IMAGE_NAME" "./$module"; then
+              echo "✅ Build exitoso para $SERVICE_NAME"
+              if docker push "$IMAGE_NAME"; then
+                echo "✅ Push exitoso para $SERVICE_NAME"
+                SUCCESS="$SUCCESS $SERVICE_NAME"
+              else
+                echo "❌ Push FALLÓ para $SERVICE_NAME"
+                FAILED="$FAILED $SERVICE_NAME"
+              fi
+            else
+              echo "❌ Build FALLÓ para $SERVICE_NAME"
+              FAILED="$FAILED $SERVICE_NAME"
+            fi
+            echo ""
+          done
+
+          echo "======================================"
+          echo "📊 RESULTADOS BACKENDS"
+          echo "======================================"
+          echo "✅ Exitosos:$SUCCESS"
+          [ -n "$SKIPPED" ] && echo "⏭️  Saltados:$SKIPPED"
+          [ -n "$FAILED" ] && echo "❌ Fallidos:$FAILED"
+          echo "======================================"
+
+          echo "backend_success=$SUCCESS" >> $GITHUB_OUTPUT
+          echo "backend_failed=$FAILED" >> $GITHUB_OUTPUT
+
+      # ============================================================
+      # FASE 3: BUILD & PUSH FRONTENDS (independientes)
+      # ============================================================
+      - name: "🎨 Build & Push Frontends"
+        id: build-frontends
+        run: |
+          REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          FRONTENDS="${{ steps.detect.outputs.frontends }}"
+          FAILED=""
+          SUCCESS=""
+          SKIPPED=""
+
+          for module in $FRONTENDS; do
+            SERVICE_NAME=$(echo "$module" | sed 's/^front_modulo_/front-/')
+            IMAGE_NAME="${{ env.REGISTRY }}/$REPO_OWNER/$SERVICE_NAME:latest"
+
+            echo "======================================"
+            echo "🚀 Frontend: $module → $SERVICE_NAME"
+            echo "   Imagen: $IMAGE_NAME"
+            echo "   Dockerfile: ./$module/Dockerfile"
+            echo "   Contexto: . (raíz del proyecto)"
+            echo "======================================"
+
+            # Verificar que la carpeta tenga contenido
+            if [ ! -f "./$module/Dockerfile" ]; then
+              echo "⏭️  SALTADO: No se encontró Dockerfile en ./$module (submodulo vacío?)"
+              SKIPPED="$SKIPPED $SERVICE_NAME"
+              echo ""
+              continue
+            fi
+
+            # IMPORTANTE: El contexto DEBE ser "." (raíz del proyecto)
+            # porque los Dockerfiles hacen COPY de carpetas hermanas:
+            #   COPY packages/ui ../packages/ui
+            #   COPY shared_components ../shared_components
+            if docker build -t "$IMAGE_NAME" -f "./$module/Dockerfile" .; then
+              echo "✅ Build exitoso para $SERVICE_NAME"
+              if docker push "$IMAGE_NAME"; then
+                echo "✅ Push exitoso para $SERVICE_NAME"
+                SUCCESS="$SUCCESS $SERVICE_NAME"
+              else
+                echo "❌ Push FALLÓ para $SERVICE_NAME"
+                FAILED="$FAILED $SERVICE_NAME"
+              fi
+            else
+              echo "❌ Build FALLÓ para $SERVICE_NAME"
+              FAILED="$FAILED $SERVICE_NAME"
+            fi
+            echo ""
+          done
+
+          echo "======================================"
+          echo "📊 RESULTADOS FRONTENDS"
+          echo "======================================"
+          echo "✅ Exitosos:$SUCCESS"
+          [ -n "$SKIPPED" ] && echo "⏭️  Saltados:$SKIPPED"
+          [ -n "$FAILED" ] && echo "❌ Fallidos:$FAILED"
+          echo "======================================"
+
+          echo "frontend_success=$SUCCESS" >> $GITHUB_OUTPUT
+          echo "frontend_failed=$FAILED" >> $GITHUB_OUTPUT
+
+      # ============================================================
+      # FASE 4: REPORTE FINAL DE BUILD
+      # ============================================================
+      - name: "📊 Resumen de Build"
+        if: always()
+        run: |
+          echo "======================================"
+          echo "📊 RESUMEN FINAL DE IMÁGENES"
+          echo "======================================"
+          echo "Backends  ✅: ${{ steps.build-backends.outputs.backend_success }}"
+          echo "Backends  ❌: ${{ steps.build-backends.outputs.backend_failed }}"
+          echo "Frontends ✅: ${{ steps.build-frontends.outputs.frontend_success }}"
+          echo "Frontends ❌: ${{ steps.build-frontends.outputs.frontend_failed }}"
+          echo "======================================"
+
+      # ============================================================
+      # FASE 5: DEPLOY A AWS EKS
+      # ============================================================
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+
+      - name: Update KubeConfig
+        run: |
+          aws eks update-kubeconfig --region us-east-1 --name maestro-cluster
+
+      - name: Install NGINX Ingress Controller
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/aws/deploy.yaml
+          echo "Esperando activamente a que los pods de NGINX estén listos..."
+
+          kubectl wait --namespace ingress-nginx \
+            --for=condition=ready pod \
+            --selector=app.kubernetes.io/component=controller \
+            --timeout=120s
+
+          sleep 10
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4.2.0
+
+      - name: Deploy to EKS using Helm
+        run: |
+          helm upgrade --install modular-app ./kubernetes/helm/modular-app \
+            -f ./kubernetes/helm/modular-app/values-aws.yaml \
+            --set global.jwtSecret="${{ secrets.JWT_SECRET }}" \
+            --set database.password="${{ secrets.DB_PASSWORD }}" \
+            --set database.passwordPlaintext="${{ secrets.DB_PASSWORD }}" \
+            --set backends.ms-mantencion.sitrackUser="${{ secrets.SITRACK_USER }}" \
+            --set backends.ms-mantencion.sitrackPass="${{ secrets.SITRACK_PASS }}"
+
+      - name: Refresh Kubernetes Pods (Rollout)
+        run: |
+          echo "Forzando a Kubernetes a descargar las nuevas imágenes de GHCR..."
+          kubectl rollout restart deployment -n default

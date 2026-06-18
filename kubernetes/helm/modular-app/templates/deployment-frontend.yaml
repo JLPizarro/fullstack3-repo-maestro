@@ -1,0 +1,51 @@
+{{- range $name, $config := .Values.frontends }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    app: {{ $name }}
+spec:
+  replicas: {{ $config.replicas }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: {{ $name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $name }}
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+      - name: {{ $name }}
+        image: "{{ $.Values.global.image.registry | default "" }}{{ if $.Values.global.image.registry }}/{{ end }}{{ $config.imageName }}:{{ $.Values.global.image.tag }}"
+        imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
+        ports:
+        - containerPort: {{ $config.port }}
+        env:
+        - name: VITE_API_URL
+          value: "/api/v1"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: {{ $config.port }}
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /
+            port: {{ $config.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 25m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+---
+{{- end }}

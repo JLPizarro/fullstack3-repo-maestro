@@ -1,0 +1,236 @@
+global:
+  environment: aws-student
+  image:
+    registry: "ghcr.io/jlpizarro"
+    tag: latest
+    pullPolicy: Always
+  jwtSecret: "super-secret-key-123"
+
+database:
+  enabled: true  # Activado para mantener Postgres in-cluster y evitar costos de RDS
+  user: admin
+  password: "admin123"  # Se sobreescribe vía GitHub Secrets en CI/CD
+  passwordPlaintext: "admin123" # Fallback para testing rápido
+  dbName: asdf_db
+  # host y port no se definen → usa automáticamente db-global:5432 (in-cluster)
+  storageSize: 5Gi
+  storageClass: "gp2" # Clase de almacenamiento estándar de AWS EBS
+
+ingress:
+  className: "nginx" # Cambiado a Nginx Ingress Controller (es gratis, requiere un Classic Load Balancer económico)
+  host: "" # Dejar en blanco para poder acceder directamente usando la URL del Load Balancer de AWS
+
+# Configuración de Microservicios de Backend (Escala mínima para t3.medium)
+backends:
+  ms-middleware:
+    imageName: ms-middleware
+    port: 8009
+    replicas: 1
+    healthPath: /health
+    hpa:
+      enabled: false
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+
+  ms-acreditacion:
+    imageName: ms-acreditacion
+    port: 8000
+    replicas: 1
+    healthPath: /api/v1/acreditacion/health
+    hpa:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 2
+      targetCPU: 80
+    resources: &default_resources
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        cpu: 150m
+        memory: 128Mi
+
+  ms-administracion:
+    imageName: ms-administracion
+    port: 8007
+    replicas: 1
+    healthPath: /api/v1/administracion/health
+    hpa:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 2
+      targetCPU: 80
+    resources: *default_resources
+
+  ms-bodega:
+    imageName: ms-bodega
+    port: 8000
+    replicas: 1
+    healthPath: /api/v1/bodega/health
+    hpa:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 2
+      targetCPU: 80
+    resources: *default_resources
+
+  ms-facturacion:
+    imageName: ms-facturacion
+    port: 8000
+    replicas: 1
+    healthPath: /api/v1/facturacion/health
+    hpa:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 3
+      targetCPU: 75
+    resources: *default_resources
+
+  ms-mantencion:
+    imageName: ms-mantencion
+    port: 8000
+    replicas: 1
+    healthPath: /api/v1/vehiculos/health
+    hpa:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 2
+      targetCPU: 80
+    sitrackUrl: "https://externalappgw.cl.sitrack.com/v2/report"
+    sitrackUser: "" # Se inyectará vía Github Secrets
+    sitrackPass: "" # Se inyectará vía Github Secrets
+    resources: *default_resources
+
+  ms-operacion:
+    imageName: ms-operacion
+    port: 8000
+    replicas: 1
+    healthPath: /api/v1/operacion/health
+    hpa:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 2
+      targetCPU: 80
+    resources: *default_resources
+
+  ms-prevencion:
+    imageName: ms-prevencion
+    port: 8000
+    replicas: 1
+    healthPath: /api/v1/prevencion/health
+    hpa:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 2
+      targetCPU: 80
+    resources: *default_resources
+
+  ms-rrhh:
+    imageName: ms-rrhh
+    port: 8000
+    replicas: 1
+    healthPath: /api/v1/personal/health
+    hpa:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 2
+      targetCPU: 80
+    resources: *default_resources
+
+  ms-watchdog:
+    imageName: ms-watchdog
+    port: 8008
+    replicas: 1
+    healthPath: /health
+    hpa:
+      enabled: false
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        cpu: 50m
+        memory: 64Mi
+
+# Configuración de Frontends (Nginx)
+frontends:
+  front-acreditacion:
+    imageName: front-acreditacion
+    port: 80
+    replicas: 1
+    path: /acreditacion/
+    apiPath: /api/v1/acreditacion/
+
+  front-administracion:
+    imageName: front-administracion
+    port: 80
+    replicas: 1
+    path: /administracion/
+    apiPath: /api/v1/administracion/
+
+  front-bodega:
+    imageName: front-bodega
+    port: 80
+    replicas: 1
+    path: /bodega/
+    apiPath: /api/v1/bodega/
+
+  front-facturacion:
+    imageName: front-facturacion
+    port: 80
+    replicas: 1
+    path: /facturacion/
+    apiPath: /api/v1/facturacion/
+
+  front-login:
+    imageName: front-login
+    port: 80
+    replicas: 1
+    path: /login/
+    apiPath: /api/v1/administracion/login
+
+  front-mantencion:
+    imageName: front-mantencion
+    port: 80
+    replicas: 1
+    path: /mantencion/
+    apiPaths:
+      - /api/v1/mantenciones/
+      - /api/v1/ordenes-trabajo/
+      - /api/v1/preventive/
+      - /api/v1/reportes/
+      - /api/v1/templates-mantencion/
+      - /api/v1/vehiculos/
+
+  front-operacion:
+    imageName: front-operacion
+    port: 80
+    replicas: 1
+    path: /operacion/
+    apiPath: /api/v1/operacion/
+
+  front-prevencion:
+    imageName: front-prevencion
+    port: 80
+    replicas: 1
+    path: /prevencion/
+    apiPath: /api/v1/prevencion/
+
+  front-rrhh:
+    imageName: front-rrhh
+    port: 80
+    replicas: 1
+    path: /rrhh/
+    apiPath: /api/v1/personal/
+
+  front-watchdog:
+    imageName: front-watchdog
+    port: 80
+    replicas: 1
+    path: /watchdog/
+    apiPath: /api/v1/watchdog/

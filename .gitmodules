@@ -1,0 +1,66 @@
+[submodule "front_modulo_facturacion"]
+	path = front_modulo_facturacion
+	url = https://github.com/JLPizarro/fullstack3-front_modulo_facturacion.git
+[submodule "front_modulo_login"]
+	path = front_modulo_login
+	url = https://github.com/JLPizarro/fullstack3-front_modulo_login.git
+[submodule "front_modulo_mantencion"]
+	path = front_modulo_mantencion
+	url = https://github.com/JLPizarro/fullstack3-front_modulo_mantencion.git
+[submodule "front_modulo_operacion"]
+	path = front_modulo_operacion
+	url = https://github.com/JLPizarro/fullstack3-front_modulo_operacion.git
+[submodule "front_modulo_prevencion"]
+	path = front_modulo_prevencion
+	url = https://github.com/JLPizarro/fullstack3-front_modulo_prevencion.git
+[submodule "front_modulo_rrhh"]
+	path = front_modulo_rrhh
+	url = https://github.com/JLPizarro/fullstack3-front_modulo_rrhh.git
+[submodule "front_modulo_watchdog"]
+	path = front_modulo_watchdog
+	url = https://github.com/JLPizarro/fullstack3-front_modulo_watchdog.git
+[submodule "modulo_administracion"]
+	path = modulo_administracion
+	url = https://github.com/JLPizarro/fullstack3-modulo_administracion.git
+[submodule "modulo_bodega"]
+	path = modulo_bodega
+	url = https://github.com/JLPizarro/fullstack3-modulo_bodega.git
+[submodule "modulo_facturacion"]
+	path = modulo_facturacion
+	url = https://github.com/JLPizarro/fullstack3-modulo_facturacion.git
+[submodule "modulo_mantencion"]
+	path = modulo_mantencion
+	url = https://github.com/JLPizarro/fullstack3-modulo_mantencion.git
+[submodule "modulo_middleware"]
+	path = modulo_middleware
+	url = https://github.com/JLPizarro/fullstack3-modulo_middleware.git
+[submodule "modulo_operacion"]
+	path = modulo_operacion
+	url = https://github.com/JLPizarro/fullstack3-modulo_operacion.git
+[submodule "modulo_prevencion"]
+	path = modulo_prevencion
+	url = https://github.com/JLPizarro/fullstack3-modulo_prevencion.git
+[submodule "modulo_rrhh"]
+	path = modulo_rrhh
+	url = https://github.com/JLPizarro/fullstack3-modulo_rrhh.git
+[submodule "modulo_watchdog"]
+	path = modulo_watchdog
+	url = https://github.com/JLPizarro/fullstack3-modulo_watchdog.git
+[submodule "nginx"]
+	path = nginx
+	url = https://github.com/JLPizarro/fullstack3-nginx.git
+[submodule "db_postgres"]
+	path = db_postgres
+	url = https://github.com/JLPizarro/fullstack3-db-postgres.git
+[submodule "front_modulo_acreditacion"]
+	path = front_modulo_acreditacion
+	url = https://github.com/JLPizarro/fullstack3-front_modulo_acreditaci-n.git
+[submodule "front_modulo_administracion"]
+	path = front_modulo_administracion
+	url = https://github.com/JLPizarro/fullstack3-front_modulo_administracion.git
+[submodule "front_modulo_bodega"]
+	path = front_modulo_bodega
+	url = https://github.com/JLPizarro/fullstack3-front_modulo_bodega.git
+[submodule "modulo_acreditacion"]
+	path = modulo_acreditacion
+	url = https://github.com/JLPizarro/fullstack3-modulo_acreditaci-n.git
