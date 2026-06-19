@@ -21,9 +21,11 @@ spec:
         - name: ghcr-secret
       {{- end }}
       
+      {{- if .Values.database.targetNode }}
       # 📌 FIJAMOS TU BASE DE DATOS AL NODO ESPECÍFICO
       nodeSelector:
         kubernetes.io/hostname: {{ .Values.database.targetNode | quote }}
+      {{- end }}
 
       containers:
       - name: postgres

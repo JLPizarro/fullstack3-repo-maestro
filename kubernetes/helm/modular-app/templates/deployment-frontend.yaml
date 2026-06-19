@@ -17,8 +17,10 @@ spec:
       labels:
         app: {{ $name }}
     spec:
+      {{- if $.Values.global.image.registry }}
       imagePullSecrets:
         - name: ghcr-secret
+      {{- end }}
       containers:
       - name: {{ $name }}
         image: "{{ $.Values.global.image.registry | default "" }}{{ if $.Values.global.image.registry }}/{{ end }}{{ $config.imageName }}:{{ $.Values.global.image.tag }}"
