@@ -12,11 +12,10 @@ database:
   password: "admin123"  # Se sobreescribe vía GitHub Secrets en CI/CD
   passwordPlaintext: "admin123" # Fallback para testing rápido
   dbName: asdf_db
+  storageSize: 2Gi
+  storageClassName: gp3
   # host y port no se definen → usa automáticamente db-global:5432 (in-cluster)
-  
-  # 📌 NUEVA CONFIGURACIÓN PARA EVITAR DISCOS EXTERNOS DE AWS ACADEMY
-  # (Recuerda cambiar este valor por el nombre real de tu nodo si es diferente)
-  targetNode: "ip-172-31-16-179.ec2.internal" 
+  # targetNode no se usa cuando se provisiona almacenamiento EBS dinámico
 
 ingress:
   className: "nginx" # Cambiado a Nginx Ingress Controller (es gratis, requiere un Classic Load Balancer económico)

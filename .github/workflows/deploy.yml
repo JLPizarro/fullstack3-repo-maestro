@@ -304,6 +304,11 @@ jobs:
       - name: Install Helm
         uses: azure/setup-helm@v4.2.0
 
+      - name: Verify AWS EBS StorageClass
+        run: |
+          echo "Verificando que la clase de almacenamiento gp2 exista en el cluster..."
+          kubectl get storageclass gp2
+
       - name: Deploy to EKS using Helm
         run: |
           helm upgrade --install modular-app ./kubernetes/helm/modular-app \
@@ -311,6 +316,7 @@ jobs:
             --set global.jwtSecret="${{ secrets.JWT_SECRET }}" \
             --set database.password="${{ secrets.DB_PASSWORD }}" \
             --set database.passwordPlaintext="${{ secrets.DB_PASSWORD }}" \
+            --set database.storageClassName=gp2 \
             --set backends.ms-mantencion.sitrackUser="${{ secrets.SITRACK_USER }}" \
             --set backends.ms-mantencion.sitrackPass="${{ secrets.SITRACK_PASS }}"
 

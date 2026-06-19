@@ -21,9 +21,11 @@ spec:
         - name: ghcr-secret
       {{- end }}
       
+      {{- if .Values.database.targetNode }}
       # 📌 FIJAMOS TU BASE DE DATOS AL NODO ESPECÍFICO
       nodeSelector:
         kubernetes.io/hostname: {{ .Values.database.targetNode | quote }}
+      {{- end }}
 
       containers:
       - name: postgres
@@ -55,13 +57,19 @@ spec:
         volumeMounts:
         - name: pgdata
           mountPath: /var/lib/postgresql/data
-          
-      # 📌 SE AGREGAN LOS VOLÚMENES DIRECTOS AQUÍ
-      volumes:
-      - name: pgdata
-        hostPath:
-          path: /mnt/data/postgres
-          type: DirectoryOrCreate
+
+  volumeClaimTemplates:
+  - metadata:
+      name: pgdata
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ .Values.database.storageSize }}
+      {{- if .Values.database.storageClassName }}
+      storageClassName: {{ .Values.database.storageClassName | quote }}
+      {{- end }}
 ---
 apiVersion: v1
 kind: Service
