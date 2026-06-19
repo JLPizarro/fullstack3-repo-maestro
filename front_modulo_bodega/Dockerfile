@@ -6,7 +6,7 @@ WORKDIR /app/front_modulo_bodega
 
 COPY front_modulo_bodega/package.json ./
 COPY packages/ui ../packages/ui
-COPY shared_components ./shared_components
+COPY shared_components ../shared_components
 RUN npm install
 
 COPY front_modulo_bodega ./
