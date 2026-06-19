@@ -318,8 +318,8 @@ jobs:
             --set database.passwordPlaintext="${{ secrets.DB_PASSWORD }}" \
             --set database.storageClassName=gp2 \
             --set backends.ms-mantencion.sitrackUser="${{ secrets.SITRACK_USER }}" \
-            --set backends.ms-mantencion.sitrackPass="${{ secrets.SITRACK_PASS }}"
-
+            --set backends.ms-mantencion.sitrackPass="${{ secrets.SITRACK_PASS }}" \
+            --force
       - name: Refresh Kubernetes Pods (Rollout)
         run: |
           echo "Forzando a Kubernetes a descargar las nuevas imágenes de GHCR..."
