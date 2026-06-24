@@ -312,7 +312,7 @@ jobs:
       - name: Verify AWS EBS StorageClass
         run: |
           echo "Verificando que la clase de almacenamiento ebs-sc exista en el cluster..."
-          kubectl get storageclass gp3
+          kubectl get storageclass gp2
 
       - name: Deploy to EKS using Helm
         run: |
