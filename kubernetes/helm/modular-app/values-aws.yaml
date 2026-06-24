@@ -13,9 +13,11 @@ database:
   passwordPlaintext: "admin123" # Fallback para testing rápido
   dbName: asdf_db
   storageSize: 2Gi
-  storageClassName: gp2
+  storageClassName: ebs-sc  # Cambiado a ebs-sc para soporte nativo en EKS Auto Mode
   # host y port no se definen → usa automáticamente db-global:5432 (in-cluster)
   # targetNode no se usa cuando se provisiona almacenamiento EBS dinámico
+  nodeSelector:
+    kubernetes.io/arch: amd64  # Fijado a AMD64 para compatibilidad de arquitectura con la imagen de BD compilada para amd64
 
 ingress:
   className: "nginx" # Cambiado a Nginx Ingress Controller (es gratis, requiere un Classic Load Balancer económico)
