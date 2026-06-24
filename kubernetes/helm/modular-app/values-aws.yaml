@@ -13,7 +13,7 @@ database:
   passwordPlaintext: "admin123" # Fallback para testing rápido
   dbName: asdf_db
   storageSize: 2Gi
-  storageClassName: ebs-sc  # Cambiado a ebs-sc para soporte nativo en EKS Auto Mode
+  storageClassName: gp3 # Cambiado a ebs-sc para soporte nativo en EKS Auto Mode
   # host y port no se definen → usa automáticamente db-global:5432 (in-cluster)
   # targetNode no se usa cuando se provisiona almacenamiento EBS dinámico
   nodeSelector:
