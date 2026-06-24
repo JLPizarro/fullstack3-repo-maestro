@@ -287,7 +287,7 @@ jobs:
 
       - name: Update KubeConfig
         run: |
-          aws eks update-kubeconfig --region us-east-1 --name cluster-ev3
+          aws eks update-kubeconfig --region us-east-1 --name cluster-maestro
 
       - name: Install NGINX Ingress Controller
         run: |
