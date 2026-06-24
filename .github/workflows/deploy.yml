@@ -324,7 +324,6 @@ jobs:
             --set database.storageClassName=ebs-sc \
             --set backends.ms-mantencion.sitrackUser="${{ secrets.SITRACK_USER }}" \
             --set backends.ms-mantencion.sitrackPass="${{ secrets.SITRACK_PASS }}" \
-            --force
       - name: Refresh Kubernetes Pods (Rollout)
         run: |
           echo "Forzando a Kubernetes a descargar las nuevas imágenes de GHCR..."
