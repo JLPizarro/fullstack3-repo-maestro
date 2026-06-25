@@ -26,6 +26,10 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
 
+      # CORRECCIÓN 1: Forzar permisos de escritura del grupo postgres en el volumen
+      securityContext:
+        fsGroup: 999
+
       containers:
       - name: postgres
         {{- if $.Values.global.image.registry }}
@@ -45,7 +49,9 @@ spec:
           value: {{ .Values.database.password | quote }}
         - name: POSTGRES_DB
           value: {{ .Values.database.dbName | quote }}
-        # Reducimos cuotas para asegurar que quepa sin OOMKilled en t3.medium
+        # CORRECCIÓN 2: Aislar los datos en una subcarpeta limpia para evitar errores de initdb
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
         resources:
           requests:
             cpu: "50m"
@@ -56,7 +62,6 @@ spec:
         volumeMounts:
         - name: pgdata
           mountPath: /var/lib/postgresql/data
-
   volumeClaimTemplates:
   - metadata:
       name: pgdata

@@ -274,7 +274,7 @@ jobs:
           echo "Frontends ❌: ${{ steps.build-frontends.outputs.frontend_failed }}"
           echo "======================================"
 
-      # ============================================================
+ # ============================================================
       # FASE 5: DEPLOY A AWS EKS
       # ============================================================
       - name: Configure AWS Credentials
@@ -307,10 +307,11 @@ jobs:
       - name: Create or Update GHCR Registry Secret in EKS
         run: |
           echo "Creando o actualizando secreto de registro ghcr-secret..."
+          # CORRECCIÓN: Usamos GHCR_PAT para asegurar permisos de descarga (ImagePull) desde el clúster
           kubectl create secret docker-registry ghcr-secret \
             --docker-server=ghcr.io \
             --docker-username="${{ github.actor }}" \
-            --docker-password="${{ secrets.GITHUB_TOKEN }}" \
+            --docker-password="${{ secrets.GHCR_PAT }}" \
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy to EKS using Helm
