@@ -289,11 +289,6 @@ jobs:
         run: |
           aws eks update-kubeconfig --region us-east-1 --name cluster-maestro
 
-      - name: Patch EBS CSI Controller
-        run: |
-          echo "Aplicando patch a ebs-csi-controller para omitir validación de región..."
-          kubectl patch deployment ebs-csi-controller -n kube-system --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--skip-region-validation=true"}]'
-
       - name: Install NGINX Ingress Controller
         run: |
           kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/aws/deploy.yaml
@@ -308,11 +303,6 @@ jobs:
 
       - name: Install Helm
         uses: azure/setup-helm@v4.2.0
-
-      - name: Verify AWS EBS StorageClass
-        run: |
-          echo "Verificando que la clase de almacenamiento gp2 exista en el cluster..."
-          kubectl get storageclass gp2
 
       - name: Create or Update GHCR Registry Secret in EKS
         run: |
