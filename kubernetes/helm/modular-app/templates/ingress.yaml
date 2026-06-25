@@ -16,13 +16,15 @@ spec:
       # 1. ENRUTAMIENTO DE BACKENDS (Microservicios API dinámicos)
       # ============================================================
       {{- range $name, $config := .Values.backends }}
-      - path: {{ $config.healthPath | dirname }} # Captura automáticamente el prefijo base (ej: /api/v1/acreditacion)
+      # Explicación: Si el servicio se llama ms-administracion, quitamos el prefijo 'ms-' 
+      # para construir limpiamente la ruta /api/v1/administracion
+      - path: {{ printf "/api/v1/%s" (trimPrefix "ms-" $name) }}
         pathType: Prefix
         backend:
           service:
-            name: {{ $name }} # Redirige al microservicio real (ej: ms-administracion)
+            name: {{ $name }}
             port:
-              number: {{ $config.port }} # Al puerto nativo del backend (ej: 8007)
+              number: {{ $config.port }}
       {{- end }}
 
       # ============================================================
