@@ -46,11 +46,11 @@ El archivo principal es `.github/workflows/deploy.yml`.
   ```
 - **Parche de EBS CSI Controller:** Aplica un `kubectl patch` a `ebs-csi-controller` en el namespace `kube-system` para agregar el flag `--skip-region-validation=true`, omitiendo validaciones estrictas de región durante el arranque del driver CSI.
 - **NGINX Ingress Controller:** Aplica la configuración base para el balanceador de carga de AWS y espera a que los Pods de Ingress estén listos.
-- **Verificación de Almacenamiento:** Valida la existencia de la StorageClass `ebs-sc` en el clúster (requerido para EKS Auto Mode).
+- **Verificación de Almacenamiento:** Valida la existencia de la StorageClass `gp2` en el clúster (provista por defecto en AWS EKS al instalar el driver EBS CSI).
 - **Despliegue con Helm:** Ejecuta `helm upgrade --install` utilizando el archivo de configuración `values-aws.yaml` e inyecta los secrets requeridos mediante `--set`:
   - `global.jwtSecret`: Clave secreta para tokens JWT.
   - `database.password` y `database.passwordPlaintext`: Contraseña para la base de datos PostgreSQL.
-  - `database.storageClassName`: Configurado como `ebs-sc` para usar almacenamiento EBS gestionado automáticamente.
+  - `database.storageClassName`: Configurado como `gp2` para usar almacenamiento EBS estándar.
   - Parámetros de Sitrack para el módulo de mantención.
 - **Rollout Refresh:** Fuerza a Kubernetes a reiniciar los Pods (`kubectl rollout restart deployment -n default`) para descargar las nuevas versiones recién subidas a GHCR.
 
@@ -64,7 +64,7 @@ Es el archivo de configuración principal para AWS (`values-aws.yaml`).
 - **Database:**
   - `enabled: true`: Levanta un pod de PostgreSQL dentro del clúster para ahorrar costos de RDS.
   - `storageSize: 2Gi`
-  - `storageClassName: ebs-sc`: Clave de almacenamiento nativa para EKS Auto Mode.
+  - `storageClassName: gp2`: Clase de almacenamiento estándar de EBS en AWS EKS.
   - `nodeSelector`: Filtra por arquitectura `kubernetes.io/arch: amd64` para obligar al pod de base de datos a correr en nodos AMD64 (evitando errores de compatibilidad binaria).
 - **Ingress:** Configura el controlador `nginx` con host vacío para enrutar tráfico directamente por el DNS del balanceador de carga.
 - **Backend & Frontend Specs:** Define recursos (CPU/Memoria), réplicas, HPAs (Horizontal Pod Autoscalers) y endpoints para cada uno de los microservicios y aplicaciones web.

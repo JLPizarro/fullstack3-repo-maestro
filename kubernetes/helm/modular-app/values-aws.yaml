@@ -13,7 +13,7 @@ database:
   passwordPlaintext: "admin123" # Fallback para testing rápido
   dbName: asdf_db
   storageSize: 2Gi
-  storageClassName: gp2 # Cambiado a ebs-sc para soporte nativo en EKS Auto Mode
+  storageClassName: gp2 # Clase de almacenamiento por defecto en AWS EKS (requiere instalar EBS CSI Driver manualmente)
   # host y port no se definen → usa automáticamente db-global:5432 (in-cluster)
   # targetNode no se usa cuando se provisiona almacenamiento EBS dinámico
   nodeSelector:
