@@ -12,11 +12,24 @@ spec:
   - host: {{ .Values.ingress.host | quote }}
     http:
       paths:
-      # Iteramos sobre todos los frontends específicos (excepto administracion que maneja la raíz "/")
+      # ============================================================
+      # 1. ENRUTAMIENTO DE BACKENDS (Microservicios API dinámicos)
+      # ============================================================
+      {{- range $name, $config := .Values.backends }}
+      - path: {{ $config.healthPath | dirname }} # Captura automáticamente el prefijo base (ej: /api/v1/acreditacion)
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ $name }} # Redirige al microservicio real (ej: ms-administracion)
+            port:
+              number: {{ $config.port }} # Al puerto nativo del backend (ej: 8007)
+      {{- end }}
+
+      # ============================================================
+      # 2. ENRUTAMIENTO DE FRONTENDS (Archivos estáticos HTML/JS)
+      # ============================================================
       {{- range $name, $config := .Values.frontends }}
       {{- if not (eq $name "front-administracion") }}
-      
-      # Ruta del Frontend
       - path: {{ $config.path }}
         pathType: Prefix
         backend:
@@ -24,35 +37,10 @@ spec:
             name: {{ $name }}
             port:
               number: 80
-              
-      # Si tiene una única ruta API asociada
-      {{- if $config.apiPath }}
-      - path: {{ $config.apiPath }}
-        pathType: Prefix
-        backend:
-          service:
-            name: {{ $name }}
-            port:
-              number: 80
-      {{- end }}
-      
-      # Si tiene múltiples rutas API (como front-mantencion)
-      {{- if $config.apiPaths }}
-      {{- range $apiPath := $config.apiPaths }}
-      - path: {{ $apiPath }}
-        pathType: Prefix
-        backend:
-          service:
-            name: {{ $name }}
-            port:
-              number: 80
       {{- end }}
       {{- end }}
       
-      {{- end }}
-      {{- end }}
-      
-      # Ruta Raíz (/) -> front-administracion
+      # Ruta Raíz (/) -> front-administracion (Panel global)
       - path: /
         pathType: Prefix
         backend:
