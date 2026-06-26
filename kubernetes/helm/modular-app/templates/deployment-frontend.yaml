@@ -28,18 +28,23 @@ spec:
         env:
         - name: VITE_API_URL
           value: "/api/v1"
+        
+        # ========================================================
+        #  AQUÍ ESTÁ LA CORRECCIÓN DE BUENA PRÁCTICA DE PRODUCCIÓN
+        # ========================================================
         livenessProbe:
           httpGet:
-            path: /
+            path: {{ $config.path }}  # <--- Cambiado de "/" a la ruta dinámica del módulo
             port: {{ $config.port }}
           initialDelaySeconds: 15
           periodSeconds: 20
         readinessProbe:
           httpGet:
-            path: /
+            path: {{ $config.path }}  # <--- Cambiado de "/" a la ruta dinámica del módulo
             port: {{ $config.port }}
           initialDelaySeconds: 5
           periodSeconds: 10
+          
         resources:
           requests:
             cpu: 25m
