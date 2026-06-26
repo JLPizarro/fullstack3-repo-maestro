@@ -16,8 +16,21 @@ spec:
       # 1. ENRUTAMIENTO DE BACKENDS (Microservicios API dinámicos)
       # ============================================================
       {{- range $name, $config := .Values.backends }}
-      # Explicación: Si el servicio se llama ms-administracion, quitamos el prefijo 'ms-' 
-      # para construir limpiamente la ruta /api/v1/administracion
+      
+      {{- if $config.apiPaths }}
+      # Si el backend maneja múltiples rutas explícitas (Ej: ms-mantencion)
+      {{- range $apiPath := $config.apiPaths }}
+      - path: {{ $apiPath }}
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ $name }}
+            port:
+              number: {{ $config.port }}
+      {{- end }}
+      
+      {{- else }}
+      # Ruta estándar automática para los demás microservicios (/api/v1/nombre)
       - path: {{ printf "/api/v1/%s" (trimPrefix "ms-" $name) }}
         pathType: Prefix
         backend:
@@ -25,6 +38,8 @@ spec:
             name: {{ $name }}
             port:
               number: {{ $config.port }}
+      {{- end }}
+      
       {{- end }}
 
       # ============================================================

@@ -99,6 +99,16 @@ backends:
     port: 8000
     replicas: 1
     healthPath: /api/v1/vehiculos/health
+    # ========================================================
+    # CORRECCIÓN: Rutas de API expuestas para el Ingress dinámico
+    # ========================================================
+    apiPaths:
+      - /api/v1/mantenciones/
+      - /api/v1/ordenes-trabajo/
+      - /api/v1/preventive/
+      - /api/v1/reportes/
+      - /api/v1/templates-mantencion/
+      - /api/v1/vehiculos/
     hpa:
       enabled: true
       minReplicas: 1
