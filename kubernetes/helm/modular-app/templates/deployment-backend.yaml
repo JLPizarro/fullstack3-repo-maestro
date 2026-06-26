@@ -18,7 +18,7 @@ spec:
         app: {{ $name }}
     spec:
 
-      # 👇 SECCIÓN AGREGADA PARA AUTENTICACIÓN CON GHCR 👇
+      # SECCIÓN DE AUTENTICACIÓN CON GHCR
       imagePullSecrets:
         - name: ghcr-secret
       containers:
@@ -72,7 +72,16 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
+          
+        # ========================================================
+        # INYECCIÓN EXPLÍCITA DE RECURSOS PARA EL CORRECTO HPA
+        # ========================================================
         resources:
-          {{- toYaml $config.resources | nindent 10 }}
+          requests:
+            cpu: {{ $config.resources.requests.cpu | quote }}
+            memory: {{ $config.resources.requests.memory | quote }}
+          limits:
+            cpu: {{ $config.resources.limits.cpu | quote }}
+            memory: {{ $config.resources.limits.memory | quote }}
 ---
 {{- end }}
