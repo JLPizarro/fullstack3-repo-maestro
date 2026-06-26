@@ -2,11 +2,16 @@
 FROM node:20-alpine AS builder
 
 WORKDIR /app
+
+# Copiamos las dependencias globales compartidas primero
+COPY packages/ui ./packages/ui
+COPY shared_components ./shared_components
+
+# Nos posicionamos en la carpeta del módulo
 WORKDIR /app/front_modulo_login
 
+# Copiamos el package y las fuentes del módulo
 COPY front_modulo_login/package.json ./
-COPY packages/ui ../packages/ui
-COPY shared_components ../shared_components
 RUN npm install
 
 COPY front_modulo_login ./
@@ -14,6 +19,7 @@ RUN npm run build
 
 # Stage 2: Serve
 FROM nginx:alpine
-COPY --from=builder /app/front_modulo_login/dist /usr/share/nginx/html
+RUN mkdir -p /usr/share/nginx/html/login
+COPY --from=builder /app/front_modulo_login/dist /usr/share/nginx/html/login
 EXPOSE 80
-CMD ["sh", "-c", "echo 'server { listen 80; location / { root /usr/share/nginx/html; index index.html; try_files $uri $uri/ /index.html; } }' > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+CMD ["sh", "-c", "echo 'server { listen 80; location /login/ { root /usr/share/nginx/html; index index.html; try_files $uri $uri/ /login/index.html; } }' > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
